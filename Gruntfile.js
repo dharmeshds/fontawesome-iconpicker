@@ -13,18 +13,9 @@ const jsBanner = `/*!
 
 module.exports = function(grunt) {
     const parsedIconPicker = 'prod/src/js/iconpicker.js';
-    const tempIconsFile = '.icons.temp';
+    const tempIconsFile = 'src/icons.yml';
+    const destFile = 'src/icons.json';
     grunt.initConfig({
-        download: {
-            somefile: {
-                src: [
-                    'https://raw.githubusercontent.com/FortAwesome/Font-Awesome/' +
-                    FONTAWESOME_VERSION +
-                    '/advanced-options/metadata/icons.yml'
-                ],
-                dest: tempIconsFile
-            },
-        },
         yaml: {
             getIcons: {
                 options: {
@@ -40,36 +31,25 @@ module.exports = function(grunt) {
                             let icon = 'fa-' + key;
                             ele.styles.forEach(function(style) {
                                 style = style.toLowerCase();
-                                if (style.startsWith('brand')) {
-                                    targetJSON.icons.push({
-                                        title: 'fab ' + icon,
-                                        searchTerms: ele.search.terms
-                                    });
-                                } else if (style.startsWith('solid')) {
-                                    targetJSON.icons.push({
-                                        title: 'fas ' + icon,
-                                        searchTerms: ele.search.terms
-                                    });
-                                } else if (style.startsWith('regular')) {
-                                    targetJSON.icons.push({
-                                        title: 'far ' + icon,
-                                        searchTerms: ele.search.terms
-                                    });
-                                } else if (style.startsWith('light')) {
-                                    targetJSON.icons.push({
+                                if (style.startsWith('light')) {
+                                    let targetObj = {
                                         title: 'fal ' + icon,
-                                        searchTerms: ele.search.terms
+                                        searchTerms: []
+                                    };
+                                    ele.search.terms.forEach(function(term) {
+                                        targetObj.searchTerms.push(term);
                                     });
+                                    targetJSON.icons.push(targetObj);
                                 }
                             });
                         });
-                        grunt.file.write(dest, JSON.stringify(targetJSON));
+                        grunt.file.write(destFile, JSON.stringify(targetJSON));
                     }
                 },
                 files: [{
                     expand: false,
                     src: [tempIconsFile],
-                    dest: tempIconsFile
+                    dest: destFile
                 }]
             },
         },
@@ -81,7 +61,7 @@ module.exports = function(grunt) {
                 options: {
                     replacements: [{
                         pattern: '//###REPLACE-WITH-FONT-AWESOME-5-FONTS###',
-                        replacement: "<%= grunt.file.read('" + tempIconsFile + "') %>"
+                        replacement: "<%= grunt.file.read('" + destFile + "') %>"
                     }]
                 }
             }
@@ -163,7 +143,7 @@ module.exports = function(grunt) {
                 'dist/js/*.js'
             ],
             temp: [
-                tempIconsFile,
+                destFile,
                 'prod/'
             ]
         }
@@ -181,7 +161,6 @@ module.exports = function(grunt) {
 
     // Register tasks
     grunt.registerTask('default', [
-        'download',
         'yaml',
         'string-replace',
         'clean:dist',
